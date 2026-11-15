@@ -1,0 +1,50 @@
+.app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app__header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: var(--space-5) var(--container-pad);
+  background: color-mix(in oklab, var(--color-bg) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app__header-inner {
+  max-width: var(--container-max);
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.app__title {
+  font-size: var(--text-xl);
+  letter-spacing: -0.02em;
+}
+
+.app__title-mark {
+  color: var(--color-primary);
+}
+
+.app__main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding: var(--space-8) var(--container-pad) var(--space-16);
+}
+
+.app__footer {
+  padding: var(--space-6) var(--container-pad);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
