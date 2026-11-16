@@ -225,6 +225,7 @@
   align-items: flex-start;
   gap: var(--space-4);
   margin-bottom: var(--space-6);
+  padding-right: 3rem;
 }
 
 .detail__title {
