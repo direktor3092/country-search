@@ -16,6 +16,12 @@
   align-items: center;
 }
 
+.search__input::-webkit-search-cancel-button,
+.search__input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .search__input {
   width: 100%;
   padding: var(--space-4) var(--space-5);
@@ -201,13 +207,14 @@
 }
 
 .detail__panel {
+  position: relative;
   width: 100%;
   max-width: 560px;
   max-height: 90vh;
   overflow-y: auto;
   background: var(--color-bg-elev);
   border-radius: var(--radius-xl);
-  padding: var(--space-8);
+  padding: var(--space-10) var(--space-8) var(--space-8);
   box-shadow: var(--shadow-lg);
   animation: slide-up var(--dur-base) var(--ease-out);
 }
@@ -233,17 +240,25 @@
 
 .detail__close {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  top: var(--space-3);
+  right: var(--space-3);
   width: 2.5rem;
   height: 2.5rem;
   border-radius: var(--radius-full);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-md);
+  background: var(--color-surface-hover);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--text-lg);
+  color: var(--color-text-muted);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.detail__close:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .detail__grid {

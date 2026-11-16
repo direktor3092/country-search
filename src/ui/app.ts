@@ -12,7 +12,12 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-function renderFlag(country: Country, className: string): HTMLImageElement {
+function renderFlag(country: Country, className: string): HTMLElement {
+  if (country.flagUrl === '') {
+    const placeholder = el('span', className);
+    placeholder.setAttribute('aria-hidden', 'true');
+    return placeholder;
+  }
   const img = el('img', className);
   img.src = country.flagUrl;
   img.alt = country.flagAlt;
@@ -129,8 +134,11 @@ function renderDetail(country: Country): HTMLElement {
   panel.append(close, head, grid, description);
   overlay.append(panel);
 
+  document.body.style.overflow = 'hidden';
+
   function closeOverlay(): void {
     overlay.remove();
+    document.body.style.overflow = '';
     document.removeEventListener('keydown', onKey);
   }
 
