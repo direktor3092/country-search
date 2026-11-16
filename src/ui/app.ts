@@ -1,5 +1,7 @@
 import type { SearchController, SearchState } from '../lib/searchController.js';
 import type { Country } from '../lib/types.js';
+import type { SearchHistory } from '../lib/history.js';
+import { debounce } from '../lib/debounce.js';
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -157,7 +159,11 @@ function renderDetail(country: Country): HTMLElement {
   return overlay;
 }
 
-export function mountApp(root: HTMLElement, controller: SearchController): void {
+export function mountApp(
+  root: HTMLElement,
+  controller: SearchController,
+  history: SearchHistory,
+): void {
   const app = el('div', 'app');
 
   const header = el('header', 'app__header');
@@ -182,7 +188,31 @@ export function mountApp(root: HTMLElement, controller: SearchController): void 
   const spinner = el('span', 'search__spinner');
   spinner.dataset['active'] = 'false';
   field.append(input, spinner);
-  search.append(label, field);
+  const historyBox = el('div', 'history');
+  historyBox.setAttribute('aria-label', 'Recent searches');
+
+  const renderHistory = (): void => {
+    const entries = history.get();
+    historyBox.replaceChildren();
+    if (entries.length === 0) return;
+    historyBox.append(el('span', 'history__label', 'Recent:'));
+    for (const query of entries) {
+      const chip = el('button', 'history__chip', query);
+      chip.type = 'button';
+      chip.addEventListener('click', () => {
+        input.value = query;
+        controller.setQuery(query);
+      });
+      historyBox.append(chip);
+    }
+  };
+  const saveHistory = debounce((query: string) => {
+    history.add(query);
+    renderHistory();
+  }, 1000);
+  renderHistory();
+
+  search.append(label, field, historyBox);
 
   const output = el('section');
   output.setAttribute('aria-live', 'polite');
@@ -206,6 +236,10 @@ export function mountApp(root: HTMLElement, controller: SearchController): void 
 
   controller.subscribe((state) => {
     spinner.dataset['active'] = state.status === 'loading' ? 'true' : 'false';
+
+    if (state.status === 'results' || state.status === 'empty') {
+      saveHistory(state.query);
+    }
 
     let view: HTMLElement;
     switch (state.status) {
