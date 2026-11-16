@@ -33,19 +33,23 @@ The debounce is _not_ the cancellation mechanism. Even with 300 ms debounce, req
 
 ### `mapCountryResponse` (`src/lib/mapCountry.ts`)
 
-Let `L` be the number of languages, `C` the number of currencies, `B` the number of borders. Real data: `L ≤ 4`, `C ≤ 4`, `B ≤ 15`.
+Let `L` be the number of languages, `C` the number of currencies, `B` the number of borders. Real data: `L <= 4`, `C <= 4`, `B <= 15`.
 
 - Time: O(L + C + B). Every field is either O(1) or a single `map`/`join` over one array.
 - Space: O(L + C + B) for the returned arrays.
 - `Intl.NumberFormat` is constructed **once** at module level, not per call — so formatting a population is O(1) amortized.
 
-### Cache and in-flight deduplication (`src/lib/cache.ts`)
+### Cache, deduplication and shared-fetch cancellation (`src/lib/cache.ts`)
 
 Both `cache` and `inFlight` are `Map<string, ...>`.
 
-- Key lookup (`cache.get` / `inFlight.get`) — O(1) average, O(key length) worst-case for hashing. Query length is at most ~30 chars, so effectively O(1).
-- Insert (`cache.set` / `inFlight.set`) — O(1) average.
-- The per-caller wrapper `abortableRace` is O(1): it only attaches one `abort` listener and one `.then` pair.
+- Cache lookup (`cache.get`) — O(1) average, O(key length) worst-case for hashing. Query length is at most ~30 chars, so effectively O(1).
+- Cache insert (`cache.set`) — O(1) average.
+- In-flight lookup / insert (`inFlight.get` / `inFlight.set`) — O(1) average.
+- Reference-count operations (`refs += 1` / `refs -= 1`) — O(1).
+- The per-caller wrapper attaches one `abort` listener and one `.then` pair — O(1).
+
+**Shared-fetch lifetime:** each in-flight entry carries its own `AbortController` and a `refs` counter. Every `cachedSearch()` caller increments `refs`. Each caller's `signal` gets an `abort` listener that decrements `refs` and, when `refs === 0`, calls `controller.abort()` — the shared network request is actually cancelled (visible as `canceled` in DevTools) when the last caller detaches. The cache itself does **not** keep the fetch alive once no UI listener is waiting for it.
 
 Memory grows linearly with the number of distinct query strings ever searched. For a single page session with human input this is bounded by a few hundred entries at most; not a concern. A production system would add an LRU eviction; the task's scope does not require it.
 
@@ -61,12 +65,12 @@ Memory grows linearly with the number of distinct query strings ever searched. F
 
 - **No `innerHTML` for dynamic content.** Everything in `src/ui/app.ts` is built with `document.createElement` via the `el` helper. This is a hard requirement in the task and a general defense against XSS: a country name from the API is data, not markup.
 
-- **Small, named helpers instead of inline logic.** `hasName` (`src/lib/classifyError.ts`) extracts the "is this object with `name === X`" check, used by three guards. `abortableRace` (`src/lib/cache.ts`) extracts the per-caller abort wrapper. `el` (`src/ui/app.ts`) centralizes element construction with class/text. Each helper is a single named concept.
+- **Small, named helpers instead of inline logic.** `hasName` (`src/lib/classifyError.ts`) extracts the "is this object with `name === X`" check, used by three guards. `detach` inside `cachedSearch` (`src/lib/cache.ts`) extracts the ref-count-decrement-and-maybe-abort logic. `el` (`src/ui/app.ts`) centralizes element construction with class/text. Each helper is a single named concept.
 
 - **Fail-safe error classification.** `classifySearchError` falls back to `{ kind: 'unknown', message }` rather than throwing on unknown shapes. The UI can always render something. Robustness over strictness at the boundary.
 
 ## Bonus: cache + history
 
 - **Cache.** `createCachedSearch` (`src/lib/cache.ts`) memoizes results by `query.trim().toLowerCase()`. Repeated identical queries are served from memory (no fetch). Empty results (404) are **not** cached — a later retry should reach the network again.
-- **Deduplication.** Concurrent identical requests share a single in-flight `Promise` via `inFlight` map. Each caller gets its own abortable wrapper (`abortableRace`) so that one caller's `AbortController.abort()` does not cancel the shared request for the others.
+- **Deduplication.** Concurrent identical requests share a single in-flight `Promise` via `inFlight` map. Each caller gets its own abort-listener that decrements the shared `refs` counter. The underlying network request is aborted only when the **last** caller detaches, so one caller's `abort()` does not break others, but the fetch does not linger after everyone gave up.
 - **History.** `createHistory` (`src/lib/history.ts`) persists the last 5 queries in `localStorage` under `country-search:history`. Duplicates are moved to the top, not duplicated. Corrupted JSON → empty history, no throw. Clicking a chip re-runs the query; if the result is in the cache, it returns instantly.
