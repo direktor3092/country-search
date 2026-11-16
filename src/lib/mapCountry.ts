@@ -22,7 +22,7 @@ export function mapCountryResponse(raw: CountryRaw): Country {
       : `${raw.name} is a country.`;
 
   return {
-    id: raw.cca3,
+    id: raw.cca3 || raw.name,
     name: raw.name,
     flagUrl,
     flagAlt,
