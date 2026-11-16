@@ -350,3 +350,9 @@
   background: var(--color-primary);
   color: var(--color-text-inverse);
 }
+
+.card__flag,
+.detail__flag {
+  object-fit: contain;
+  background: var(--color-border);
+}
