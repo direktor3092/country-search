@@ -12,7 +12,9 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepare": "husky"
+    "prepare": "husky",
+    "predeploy": "npm run build && node scripts/prepare-pages.mjs",
+    "deploy": "gh-pages -d build"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -27,6 +29,7 @@
     "@eslint/js": "^10.0.1",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
+    "gh-pages": "^6.3.0",
     "husky": "^9.1.7",
     "jsdom": "^31.0.1",
     "lint-staged": "^17.6.0",
