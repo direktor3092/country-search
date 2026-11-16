@@ -15,16 +15,16 @@ export interface CountryFlags {
 
 export interface CountryRaw {
   name: string;
-  capital: string;
-  region: string;
-  subregion?: string;
-  population: number;
-  area: number;
-  borders: string[];
   cca3: string;
-  flags: CountryFlags;
-  languages: CountryLanguage[];
-  currencies: CountryCurrency[];
+  capital?: string;
+  region?: string;
+  subregion?: string;
+  population?: number;
+  area?: number;
+  borders?: string[];
+  flags?: CountryFlags;
+  languages?: CountryLanguage[];
+  currencies?: CountryCurrency[];
 }
 
 export interface Country {

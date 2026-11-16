@@ -86,4 +86,19 @@ describe('mapCountryResponse', () => {
     expect(country.currency).toBe('—');
     expect(country.languages).toEqual([]);
   });
+  it('handles a partial api response without throwing', () => {
+    const country = mapCountryResponse({
+      name: 'Afghanistan',
+      cca3: 'AFG',
+    });
+    expect(country.name).toBe('Afghanistan');
+    expect(country.id).toBe('AFG');
+    expect(country.capital).toBe('—');
+    expect(country.region).toBe('Unknown');
+    expect(country.flagUrl).toBe('');
+    expect(country.borders).toEqual([]);
+    expect(country.languages).toEqual([]);
+    expect(country.currency).toBe('—');
+    expect(country.populationFormatted).toBe('0');
+  });
 });
