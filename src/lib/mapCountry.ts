@@ -4,13 +4,22 @@ const EM_DASH = '—';
 const numberFormatter = new Intl.NumberFormat('en-US');
 
 export function mapCountryResponse(raw: CountryRaw): Country {
-  const flagUrl = raw.flags.png ?? raw.flags.svg ?? '';
+  const flags = raw.flags ?? {};
+  const flagUrl = flags.png || flags.svg || '';
+  const flagAlt = flags.alt ?? `Flag of ${raw.name}`;
   const capital = raw.capital || EM_DASH;
-  const languages = raw.languages.map((language) => language.name);
-  const currency = raw.currencies.map((entry) => entry.name).join(', ') || EM_DASH;
-  const place = raw.subregion ? `${raw.subregion}, ${raw.region}` : raw.region;
-  const description = `${raw.name} is a country in ${place}.`;
-  const flagAlt = raw.flags.alt ?? `Flag of ${raw.name}`;
+  const region = raw.region || 'Unknown';
+  const languages = (raw.languages ?? []).map((language) => language.name);
+  const currency = (raw.currencies ?? []).map((entry) => entry.name).join(', ') || EM_DASH;
+  const borders = raw.borders ?? [];
+  const population = raw.population ?? 0;
+  const area = raw.area ?? 0;
+
+  const description = raw.subregion
+    ? `${raw.name} is a country in ${raw.subregion}, ${region}.`
+    : raw.region
+      ? `${raw.name} is a country in ${region}.`
+      : `${raw.name} is a country.`;
 
   return {
     id: raw.cca3,
@@ -18,11 +27,11 @@ export function mapCountryResponse(raw: CountryRaw): Country {
     flagUrl,
     flagAlt,
     capital,
-    region: raw.region,
-    population: raw.population,
-    populationFormatted: numberFormatter.format(raw.population),
-    area: raw.area,
-    borders: raw.borders,
+    region,
+    population,
+    populationFormatted: numberFormatter.format(population),
+    area,
+    borders,
     languages,
     currency,
     description,
