@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createCachedSearch } from '../src/lib/cache.js';
 import type { CountryRaw } from '../src/lib/types.js';
+import { searchCountries } from '../src/lib/searchCountries.js';
 
 const spainRaw: CountryRaw = {
   name: 'Spain',
@@ -110,5 +111,39 @@ describe('createCachedSearch', () => {
     await expect(cachedSearch('spain', new AbortController().signal)).resolves.toEqual([spainRaw]);
 
     expect(search).toHaveBeenCalledTimes(2);
+  });
+  it('aborts the underlying fetch when all callers detach', async () => {
+    const fetchSpy = vi.fn((_url: string | URL | Request, init?: RequestInit) => {
+      const signal = init?.signal;
+      return new Promise<Response>((_resolve, reject) => {
+        if (!signal) return;
+        if (signal.aborted) {
+          reject(signal.reason);
+          return;
+        }
+        signal.addEventListener('abort', () => reject(signal.reason));
+      });
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const search = (q: string, s: AbortSignal) => searchCountries(q, s);
+    const cachedSearch = createCachedSearch({ search, timeoutMs: 10000 });
+
+    const controllerA = new AbortController();
+    const controllerB = new AbortController();
+    const a = cachedSearch('spain', controllerA.signal);
+    const b = cachedSearch('spain', controllerB.signal);
+
+    const fetchSignal = fetchSpy.mock.calls[0]?.[1]?.signal;
+    expect(fetchSignal).toBeDefined();
+    expect(fetchSignal?.aborted).toBe(false);
+
+    controllerA.abort();
+    await expect(a).rejects.toMatchObject({ name: 'AbortError' });
+    expect(fetchSignal?.aborted).toBe(false);
+
+    controllerB.abort();
+    await expect(b).rejects.toMatchObject({ name: 'AbortError' });
+    expect(fetchSignal?.aborted).toBe(true);
   });
 });
